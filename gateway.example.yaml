@@ -1,0 +1,96 @@
+# Version Control Agent Gateway Configuration
+# Copy to gateway.yaml and configure with your settings.
+
+server:
+  listen: ":8080"
+  read_timeout: 30s
+  write_timeout: 120s  # Large pushes need time
+
+log:
+  level: "info"    # debug, info, warn, error
+  format: "json"   # json or text
+
+# Upstream Git providers - the gateway uses these credentials to access repos
+upstreams:
+  # GitHub - uses basic auth with x-access-token for git operations
+  - match: "github.com/**"
+    token: "${GITHUB_TOKEN}"      # Personal access token or GitHub App token
+    auth_scheme: "basic"
+    username: "x-access-token"
+
+  # GitLab
+  - match: "gitlab.com/**"
+    token: "${GITLAB_TOKEN}"
+    auth_scheme: "bearer"
+
+  # Self-hosted GitLab example
+  - match: "gitlab.example.com/**"
+    token: "${GITLAB_INTERNAL_TOKEN}"
+    auth_scheme: "bearer"
+
+  # Bitbucket (uses basic auth)
+  - match: "bitbucket.org/**"
+    token: "${BITBUCKET_APP_PASSWORD}"
+    auth_scheme: "basic"
+    username: "${BITBUCKET_USERNAME}"
+
+# Agent definitions - each agent has API keys and access policies
+agents:
+  # Code generation agent - can clone and push to specific repos
+  - id: "agent-codegen"
+    api_keys:
+      - "${AGENT_CODEGEN_KEY}"
+    policies:
+      - repos:
+          - "github.com/acme/frontend"
+          - "github.com/acme/backend"
+        allow:
+          - fetch
+          - clone
+          - push
+        branch_rules:
+          allow_push:
+            - "refs/heads/agent/**"      # Can push to agent/* branches
+            - "refs/heads/feature/**"    # Can push to feature/* branches
+          deny_push:
+            - "refs/heads/main"          # Cannot push to main
+            - "refs/heads/master"        # Cannot push to master
+            - "refs/tags/**"             # Cannot create/modify tags
+        path_rules:
+          deny_modify:
+            - ".github/workflows/**"     # Cannot modify CI/CD
+            - "go.mod"                   # Cannot modify dependencies
+            - "go.sum"
+            - "package-lock.json"
+            - "Dockerfile"
+
+  # Read-only reviewer agent - can only clone/fetch
+  - id: "agent-reviewer"
+    api_keys:
+      - "${AGENT_REVIEWER_KEY}"
+    policies:
+      - repos:
+          - "github.com/acme/**"         # All repos in the acme org
+        allow:
+          - fetch
+          - clone
+        # No push allowed - not in allow list
+
+  # Deployment agent - limited push access for infra
+  - id: "agent-deployer"
+    api_keys:
+      - "${AGENT_DEPLOYER_KEY}"
+    policies:
+      - repos:
+          - "github.com/acme/infra"
+        allow:
+          - fetch
+          - clone
+          - push
+        branch_rules:
+          allow_push:
+            - "refs/heads/deploy/**"
+        path_rules:
+          allow_modify:                  # Allowlist mode - ONLY these paths
+            - "k8s/overlays/staging/**"
+            - "k8s/overlays/production/**"
