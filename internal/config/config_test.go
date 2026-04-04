@@ -38,7 +38,6 @@ agents:
           - "github.com/test/repo"
         allow:
           - fetch
-          - clone
           - push
         branch_rules:
           allow_push:

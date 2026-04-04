@@ -36,7 +36,7 @@ upstreams:
 
 # Agent definitions - each agent has API keys and access policies
 agents:
-  # Code generation agent - can clone and push to specific repos
+  # Code generation agent - can read and push to specific repos
   - id: "agent-codegen"
     api_keys:
       - "${AGENT_CODEGEN_KEY}"
@@ -45,8 +45,7 @@ agents:
           - "github.com/acme/frontend"
           - "github.com/acme/backend"
         allow:
-          - fetch
-          - clone
+          - fetch  # Read access: clone, fetch, pull
           - push
         branch_rules:
           allow_push:
@@ -64,7 +63,7 @@ agents:
             - "package-lock.json"
             - "Dockerfile"
 
-  # Read-only reviewer agent - can only clone/fetch
+  # Read-only reviewer agent - can only read (clone/fetch/pull)
   - id: "agent-reviewer"
     api_keys:
       - "${AGENT_REVIEWER_KEY}"
@@ -72,9 +71,7 @@ agents:
       - repos:
           - "github.com/acme/**"         # All repos in the acme org
         allow:
-          - fetch
-          - clone
-        # No push allowed - not in allow list
+          - fetch  # Read-only: no push
 
   # Deployment agent - limited push access for infra
   - id: "agent-deployer"
@@ -85,7 +82,6 @@ agents:
           - "github.com/acme/infra"
         allow:
           - fetch
-          - clone
           - push
         branch_rules:
           allow_push:

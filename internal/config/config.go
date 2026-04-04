@@ -61,8 +61,7 @@ type PathRules struct {
 type Operation string
 
 const (
-	OpFetch Operation = "fetch"
-	OpClone Operation = "clone"
+	OpFetch Operation = "fetch" // Covers clone, fetch, pull (all read operations)
 	OpPush  Operation = "push"
 )
 
@@ -147,7 +146,7 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("agent[%d].policy[%d]: at least one repo is required", i, j)
 			}
 			for _, op := range p.Allow {
-				if op != OpFetch && op != OpClone && op != OpPush {
+				if op != OpFetch && op != OpPush {
 					return fmt.Errorf("agent[%d].policy[%d]: invalid operation %q", i, j, op)
 				}
 			}

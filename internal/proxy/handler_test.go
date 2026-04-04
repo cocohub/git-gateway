@@ -120,7 +120,7 @@ func TestGateway_Authentication(t *testing.T) {
 			APIKeys: []string{"valid-key"},
 			Policies: []config.Policy{{
 				Repos: []string{upstreamHost + "/**"},
-				Allow: []config.Operation{config.OpFetch, config.OpClone},
+				Allow: []config.Operation{config.OpFetch},
 			}},
 		},
 	}
@@ -194,7 +194,7 @@ func TestGateway_PolicyEnforcement(t *testing.T) {
 			APIKeys: []string{"read-key"},
 			Policies: []config.Policy{{
 				Repos: []string{upstreamHost + "/allowed/**"},
-				Allow: []config.Operation{config.OpFetch, config.OpClone},
+				Allow: []config.Operation{config.OpFetch},
 			}},
 		},
 	}

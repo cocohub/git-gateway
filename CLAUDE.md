@@ -60,7 +60,7 @@ agents:
     api_keys: ["${AGENT_KEY}"]
     policies:
       - repos: ["github.com/owner/repo"]
-        allow: [fetch, clone, push]
+        allow: [fetch, push]  # fetch = clone/fetch/pull
         branch_rules:
           deny_push: ["refs/heads/main", "refs/tags/**"]
 ```

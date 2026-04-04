@@ -1,4 +1,4 @@
-# Version Control Agent Gateway
+# Git Gateway
 
 A Git HTTP proxy that enforces fine-grained access control for AI agents. The gateway sits between AI agents and Git providers (GitHub, GitLab, etc.), authenticating agents, enforcing policies, and proxying requests with injected credentials.
 
@@ -6,7 +6,7 @@ A Git HTTP proxy that enforces fine-grained access control for AI agents. The ga
 
 - **Agent Authentication**: API key-based auth via Basic Auth or custom header
 - **Repository Access Control**: Allow/deny access per agent per repository
-- **Operation Control**: Restrict agents to fetch/clone/push per repo
+- **Operation Control**: Restrict agents to fetch/push per repo
 - **Branch Protection**: Deny pushes to specific branches (e.g., `main`, `master`)
 - **Path Protection**: Deny modifications to specific files (e.g., `.github/workflows/*`)
 - **Provider Agnostic**: Works with GitHub, GitLab, Bitbucket, or any Git HTTP server
@@ -60,7 +60,7 @@ agents:
     api_keys: ["${AGENT_CODEGEN_KEY}"]
     policies:
       - repos: ["github.com/myorg/myrepo"]
-        allow: [fetch, clone, push]
+        allow: [fetch, push]
         branch_rules:
           deny_push:
             - "refs/heads/main"
@@ -158,8 +158,7 @@ agents:
     api_keys: ["${AGENT_READONLY_KEY}"]
     policies:
       - repos: ["github.com/myorg/**"]  # Glob pattern
-        allow: [fetch, clone]
-        # No push - not in allow list
+        allow: [fetch]  # Read-only: clone, fetch, pull
 ```
 
 ### Policy Rules
@@ -167,7 +166,7 @@ agents:
 | Rule | Description |
 |------|-------------|
 | `repos` | Glob patterns for repositories (e.g., `github.com/org/*`) |
-| `allow` | Operations allowed: `fetch`, `clone`, `push` |
+| `allow` | Operations: `fetch` (clone/fetch/pull), `push` |
 | `branch_rules.allow_push` | Refs the agent CAN push to (allowlist) |
 | `branch_rules.deny_push` | Refs the agent CANNOT push to (blocklist, takes precedence) |
 | `path_rules.deny_modify` | File paths that cannot be modified |

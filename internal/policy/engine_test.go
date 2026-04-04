@@ -13,7 +13,7 @@ func TestCheckOperation(t *testing.T) {
 			APIKeys: []string{"key"},
 			Policies: []config.Policy{{
 				Repos: []string{"github.com/acme/**"},
-				Allow: []config.Operation{config.OpFetch, config.OpClone},
+				Allow: []config.Operation{config.OpFetch},
 			}},
 		},
 		{
@@ -21,7 +21,7 @@ func TestCheckOperation(t *testing.T) {
 			APIKeys: []string{"key"},
 			Policies: []config.Policy{{
 				Repos: []string{"github.com/acme/repo"},
-				Allow: []config.Operation{config.OpFetch, config.OpClone, config.OpPush},
+				Allow: []config.Operation{config.OpFetch, config.OpPush},
 			}},
 		},
 	}
@@ -43,10 +43,10 @@ func TestCheckOperation(t *testing.T) {
 			allowed: true,
 		},
 		{
-			name:    "reader can clone",
+			name:    "reader can fetch any repo with glob",
 			agent:   "reader",
 			repo:    "github.com/acme/any-repo",
-			op:      config.OpClone,
+			op:      config.OpFetch,
 			allowed: true,
 		},
 		{
