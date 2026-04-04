@@ -8,7 +8,6 @@ A Git HTTP proxy that enforces fine-grained access control for AI agents. The ga
 - **Repository Access Control**: Allow/deny access per agent per repository
 - **Operation Control**: Restrict agents to fetch/push per repo
 - **Branch Protection**: Deny pushes to specific branches (e.g., `main`, `master`)
-- **Path Protection**: Deny modifications to specific files (e.g., `.github/workflows/*`)
 - **Provider Agnostic**: Works with GitHub, GitLab, Bitbucket, or any Git HTTP server
 - **Hot-Reload**: Config changes apply without restart
 
@@ -138,7 +137,6 @@ agents:
           - "github.com/myorg/backend"
         allow:
           - fetch
-          - clone
           - push
         branch_rules:
           allow_push:
@@ -148,11 +146,6 @@ agents:
             - "refs/heads/main"
             - "refs/heads/master"
             - "refs/tags/**"
-        path_rules:
-          deny_modify:
-            - ".github/workflows/**"
-            - "Dockerfile"
-            - "go.mod"
 
   - id: "readonly-agent"
     api_keys: ["${AGENT_READONLY_KEY}"]
@@ -169,8 +162,6 @@ agents:
 | `allow` | Operations: `fetch` (clone/fetch/pull), `push` |
 | `branch_rules.allow_push` | Refs the agent CAN push to (allowlist) |
 | `branch_rules.deny_push` | Refs the agent CANNOT push to (blocklist, takes precedence) |
-| `path_rules.deny_modify` | File paths that cannot be modified |
-| `path_rules.allow_modify` | Only these paths can be modified (allowlist mode) |
 
 ## Running in Production
 

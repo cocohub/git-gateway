@@ -2,7 +2,7 @@
 
 ## Context
 
-Build a Git HTTP smart protocol proxy in Go that acts as an access control gateway for AI agents. Agents point their git remote at the gateway (e.g., `http://gateway:8080/github.com/owner/repo.git`), and the gateway authenticates the agent, enforces policies (repo, operation, branch, path level), then proxies to the real upstream with injected credentials. Provider-agnostic, config-file-driven.
+Build a Git HTTP smart protocol proxy in Go that acts as an access control gateway for AI agents. Agents point their git remote at the gateway (e.g., `http://agent_id:agent_api_key@gateway:8080/github.com/owner/repo`), and the gateway authenticates the agent, enforces policies (repo, operation, branch level), then proxies to the real upstream with injected credentials. Provider-agnostic, config-file-driven.
 
 ## Project Structure
 
@@ -13,9 +13,9 @@ git-gateway/
 │   ├── config/config.go          # YAML parsing, env var expansion, types
 │   ├── auth/auth.go              # Agent auth (Basic Auth / X-Gateway-Token)
 │   ├── policy/
-│   │   ├── engine.go             # Allow/deny evaluation (repo, op, branch, path)
+│   │   ├── engine.go             # Allow/deny evaluation (repo, op, branch)
 │   │   ├── types.go              # Decision, Operation types
-│   │   └── matcher.go            # Glob matching for repos, branches, paths
+│   │   └── matcher.go            # Glob matching for repos, branches
 │   ├── gitprotocol/
 │   │   ├── pktline.go            # pkt-line reader/writer
 │   │   ├── receivepack.go        # Parse ref update commands from receive-pack body
@@ -25,8 +25,7 @@ git-gateway/
 │   │   ├── discovery.go          # info/refs proxy
 │   │   └── transport.go          # Upstream token injection
 │   ├── middleware/logging.go     # Structured access logging
-│   └── pathcheck/checker.go      # Path-level enforcement via provider API
-├── configs/gateway.example.yaml
+├── gateway.example.yaml
 ├── go.mod
 └── Makefile
 ```
@@ -53,8 +52,6 @@ agents:
         branch_rules:
           allow_push: ["refs/heads/agent/*", "refs/heads/feature/*"]
           deny_push: ["refs/heads/main", "refs/tags/*"]   # deny wins over allow
-        path_rules:
-          deny_modify: [".github/workflows/*", "go.mod"]
 ```
 
 ## Request Flow
@@ -63,7 +60,7 @@ agents:
 2. Gateway parses URL → extracts repo identifier (`github.com/owner/repo.git`) and git endpoint
 3. Authenticates agent from Basic Auth (user=agent-id, pass=api-key) or `X-Gateway-Token`
 4. Policy engine checks: is this agent allowed this operation on this repo?
-5. For push (`git-receive-pack`): parse pkt-line commands to extract ref updates → check branch rules → check path rules
+5. For push (`git-receive-pack`): parse pkt-line commands to extract ref updates → check branch rules
 6. If allowed: proxy request to `https://github.com/owner/repo.git/...` with injected upstream token
 7. Log the decision (agent, repo, operation, allowed/denied, reason)
 
@@ -74,18 +71,6 @@ Parse the `POST .../git-receive-pack` body which contains pkt-line formatted ref
 - Read command lines via pkt-line reader, then stream the PACK data through untouched
 - Use `io.TeeReader` to buffer only the small command portion (~1KB), keeping PACK data streaming
 - Evaluate each refname against `allow_push`/`deny_push` glob patterns (deny wins)
-
-## Path-Level Enforcement (Push)
-
-**Approach: proxy-then-verify via provider API.** After forwarding the push upstream, call the provider's compare API (e.g., GitHub `GET /repos/{owner}/{repo}/compare/{old}...{new}`) to get changed file list. If any path violates rules, revert the ref via API. There is a brief race window where the change exists — acceptable for AI agent guardrails since agents typically push to isolated branches.
-
-The `pathcheck.Checker` interface isolates this concern:
-```go
-type Checker interface {
-    GetChangedPaths(ctx context.Context, repo, oldSHA, newSHA string) ([]string, error)
-    RevertRef(ctx context.Context, repo, ref, sha string) error
-}
-```
 
 ## Implementation Phases
 
@@ -106,13 +91,7 @@ type Checker interface {
 4. `internal/proxy/handler.go` — integrate command parsing into `handleReceivePack`
 5. Tests: pkt-line parsing, receive-pack command extraction, branch policy evaluation
 
-### Phase 3: Path-Level Enforcement
-1. `internal/pathcheck/checker.go` — GitHub compare API integration (extensible to other providers)
-2. `internal/policy` — add path rule evaluation
-3. `internal/proxy` — integrate path checking into push flow
-4. Tests: path checking with mock provider API
-
-### Phase 4: Hardening
+### Phase 3: Hardening
 1. Structured JSON logging with `slog`
 2. Request ID propagation
 3. Config validation at startup (reject invalid patterns, missing tokens)
@@ -123,7 +102,7 @@ type Checker interface {
 1. **Unit tests**: `go test ./...` after each phase
 2. **Manual integration test**: 
    - Start gateway with example config pointing at a real GitHub repo
-   - `git clone http://localhost:8080/github.com/owner/repo.git` with agent credentials in URL
+   - `git clone http://agent_id:agent_api_key@localhost:8080/github.com/owner/repo`
    - Attempt push to allowed branch (should succeed)
    - Attempt push to denied branch (should fail with clear error)
 3. **End-to-end test**: Go test that starts a mock upstream via `httptest.Server`, launches the gateway, and issues real git HTTP protocol requests

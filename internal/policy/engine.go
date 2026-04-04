@@ -85,50 +85,6 @@ func (e *Engine) CheckBranches(agentID, repo string, updates []RefUpdate) Decisi
 	return Allow(agentID, repo, config.OpPush, "branch rules satisfied")
 }
 
-// CheckPaths evaluates whether agent can modify the given file paths.
-func (e *Engine) CheckPaths(agentID, repo string, paths []string) Decision {
-	agent, ok := e.agents[agentID]
-	if !ok {
-		return Deny(agentID, repo, config.OpPush, "unknown agent")
-	}
-
-	// Find the matching policy
-	var matchedPolicy *config.Policy
-	for i := range agent.Policies {
-		if matchesRepo(repo, agent.Policies[i].Repos) {
-			matchedPolicy = &agent.Policies[i]
-			break
-		}
-	}
-
-	if matchedPolicy == nil {
-		return Deny(agentID, repo, config.OpPush, "no policy matches repo")
-	}
-
-	// If no path rules, allow all paths
-	if matchedPolicy.PathRules == nil {
-		return Allow(agentID, repo, config.OpPush, "no path restrictions")
-	}
-
-	rules := matchedPolicy.PathRules
-
-	for _, path := range paths {
-		// Deny rules take precedence
-		if len(rules.DenyModify) > 0 && MatchAny(path, rules.DenyModify) {
-			return Deny(agentID, repo, config.OpPush,
-				fmt.Sprintf("modification of %s denied by path rules", path))
-		}
-
-		// If allow rules exist (allowlist mode), path must match
-		if len(rules.AllowModify) > 0 && !MatchAny(path, rules.AllowModify) {
-			return Deny(agentID, repo, config.OpPush,
-				fmt.Sprintf("modification of %s not in allowed paths", path))
-		}
-	}
-
-	return Allow(agentID, repo, config.OpPush, "path rules satisfied")
-}
-
 // GetPolicy returns the matching policy for an agent and repo, or nil if none.
 func (e *Engine) GetPolicy(agentID, repo string) *config.Policy {
 	agent, ok := e.agents[agentID]

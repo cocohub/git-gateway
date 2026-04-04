@@ -45,17 +45,11 @@ type Policy struct {
 	Repos       []string     `yaml:"repos"`
 	Allow       []Operation  `yaml:"allow"`
 	BranchRules *BranchRules `yaml:"branch_rules,omitempty"`
-	PathRules   *PathRules   `yaml:"path_rules,omitempty"`
 }
 
 type BranchRules struct {
 	AllowPush []string `yaml:"allow_push"`
 	DenyPush  []string `yaml:"deny_push"`
-}
-
-type PathRules struct {
-	DenyModify  []string `yaml:"deny_modify,omitempty"`
-	AllowModify []string `yaml:"allow_modify,omitempty"`
 }
 
 type Operation string

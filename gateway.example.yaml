@@ -55,13 +55,6 @@ agents:
             - "refs/heads/main"          # Cannot push to main
             - "refs/heads/master"        # Cannot push to master
             - "refs/tags/**"             # Cannot create/modify tags
-        path_rules:
-          deny_modify:
-            - ".github/workflows/**"     # Cannot modify CI/CD
-            - "go.mod"                   # Cannot modify dependencies
-            - "go.sum"
-            - "package-lock.json"
-            - "Dockerfile"
 
   # Read-only reviewer agent - can only read (clone/fetch/pull)
   - id: "agent-reviewer"
@@ -86,7 +79,3 @@ agents:
         branch_rules:
           allow_push:
             - "refs/heads/deploy/**"
-        path_rules:
-          allow_modify:                  # Allowlist mode - ONLY these paths
-            - "k8s/overlays/staging/**"
-            - "k8s/overlays/production/**"
