@@ -53,7 +53,7 @@ docker-build:
 	docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 
 docker-run:
-	docker run --rm -p 8081:8081 \
+	docker run --rm -p 8080:8080 \
 		--env-file .env \
 		-v $(PWD)/gateway.yaml:/etc/gateway/gateway.yaml:ro \
 		$(IMAGE):latest
