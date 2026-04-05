@@ -2,6 +2,7 @@ package config
 
 import (
 	"log/slog"
+	"path/filepath"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
@@ -73,6 +74,9 @@ func (m *Manager) Reload() error {
 }
 
 // Watch starts watching the config file for changes.
+// Watches the directory rather than the file directly to handle
+// atomic writes (delete+rename) which are common with Docker volumes
+// and many editors.
 func (m *Manager) Watch() error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -82,21 +86,30 @@ func (m *Manager) Watch() error {
 
 	go m.watchLoop()
 
-	if err := watcher.Add(m.path); err != nil {
+	// Watch the directory, not the file - this handles atomic writes
+	// where editors/Docker replace the file (new inode) rather than
+	// writing in place.
+	dir := filepath.Dir(m.path)
+	if err := watcher.Add(dir); err != nil {
 		watcher.Close()
 		return err
 	}
 
-	m.logger.Info("watching config file for changes", "path", m.path)
+	m.logger.Info("watching config file for changes", "path", m.path, "dir", dir)
 	return nil
 }
 
 func (m *Manager) watchLoop() {
+	targetFile := filepath.Base(m.path)
 	for {
 		select {
 		case event, ok := <-m.watcher.Events:
 			if !ok {
 				return
+			}
+			// Only react to events for our config file
+			if filepath.Base(event.Name) != targetFile {
+				continue
 			}
 			// Reload on write or create (some editors delete and recreate)
 			if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
