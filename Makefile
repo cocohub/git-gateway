@@ -1,7 +1,9 @@
-.PHONY: build test lint run clean setup
+.PHONY: build test lint run clean setup docker-build docker-run
 
 BINARY=gateway
 BUILD_DIR=bin
+IMAGE=git-gateway
+VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 build:
 	go build -o $(BUILD_DIR)/$(BINARY) ./cmd/gateway
@@ -46,3 +48,12 @@ fmt:
 
 vet:
 	go vet ./...
+
+docker-build:
+	docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
+
+docker-run:
+	docker run --rm -p 8080:8080 \
+		--env-file .env \
+		-v $(PWD)/gateway.yaml:/etc/gateway:ro \
+		$(IMAGE):latest -config /etc/gateway/gateway.yaml
