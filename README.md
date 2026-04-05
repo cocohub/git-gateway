@@ -207,16 +207,16 @@ pm2 logs gateway
 
 ### With Docker
 
-```dockerfile
-FROM golang:1.21-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o gateway ./cmd/gateway
+```bash
+# Build
+docker build -t git-gateway .
 
-FROM alpine:latest
-COPY --from=builder /app/gateway /usr/local/bin/
-ENTRYPOINT ["gateway"]
-CMD ["-config", "/etc/gateway/gateway.yaml"]
+# Run (mount your config and .env)
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/gateway.yaml:/etc/gateway/gateway.yaml:ro \
+  -v $(pwd)/.env:/app/.env:ro \
+  git-gateway
 ```
 
 ## Hot-Reload
