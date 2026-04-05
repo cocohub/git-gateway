@@ -53,7 +53,7 @@ docker-build:
 	docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 
 docker-run:
-	docker run --rm --name git-gateway -p 8080:8080 \
+	docker run -d --rm --name git-gateway -p 8080:8080 \
 		--env-file .env \
 		-v $(PWD)/gateway.yaml:/etc/gateway/gateway.yaml:ro \
 		$(IMAGE):latest
