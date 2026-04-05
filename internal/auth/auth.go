@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	ErrNoCredentials = errors.New("no credentials provided")
-	ErrInvalidAPIKey = errors.New("invalid API key")
-	ErrUnknownAgent  = errors.New("unknown agent")
+	ErrNoCredentials       = errors.New("no credentials provided")
+	ErrInvalidCredentials  = errors.New("invalid credentials")
 )
 
 // Authenticator resolves an incoming request to an agent identity.
@@ -50,7 +49,7 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (string, error) {
 	if token := r.Header.Get("X-Gateway-Token"); token != "" {
 		agentID, ok := a.agentsByKey[token]
 		if !ok {
-			return "", ErrInvalidAPIKey
+			return "", ErrInvalidCredentials
 		}
 		return agentID, nil
 	}
@@ -61,17 +60,19 @@ func (a *APIKeyAuthenticator) Authenticate(r *http.Request) (string, error) {
 		return "", ErrNoCredentials
 	}
 
-	// Password is the API key, username is the agent ID (for logging purposes)
-	agentID, ok := a.agentsByKey[password]
-	if !ok {
-		return "", ErrInvalidAPIKey
+	if username == "" {
+		return "", ErrInvalidCredentials
 	}
 
-	// If username was provided, verify it matches the agent ID
-	if username != "" && username != agentID {
-		// Username mismatch - could be intentional (agent specifying ID) or mistake
-		// We trust the API key, but log this situation
-		// For now, return the agent ID from the key
+	// Password is the API key
+	agentID, ok := a.agentsByKey[password]
+	if !ok {
+		return "", ErrInvalidCredentials
+	}
+
+	// Username must match the agent ID associated with the API key
+	if username != agentID {
+		return "", ErrInvalidCredentials
 	}
 
 	return agentID, nil

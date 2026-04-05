@@ -57,7 +57,23 @@ func TestAPIKeyAuthenticator(t *testing.T) {
 				r.SetBasicAuth("agent-1", "wrong-key")
 			},
 			wantAgent: "",
-			wantErr:   ErrInvalidAPIKey,
+			wantErr:   ErrInvalidCredentials,
+		},
+		{
+			name: "agent ID mismatch",
+			setupReq: func(r *http.Request) {
+				r.SetBasicAuth("wrong-agent", "key-1")
+			},
+			wantAgent: "",
+			wantErr:   ErrInvalidCredentials,
+		},
+		{
+			name: "empty username",
+			setupReq: func(r *http.Request) {
+				r.SetBasicAuth("", "key-1")
+			},
+			wantAgent: "",
+			wantErr:   ErrInvalidCredentials,
 		},
 		{
 			name: "no credentials",
